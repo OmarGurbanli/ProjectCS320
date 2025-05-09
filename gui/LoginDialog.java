@@ -12,37 +12,47 @@ import java.sql.SQLException;
 public class LoginDialog extends JDialog {
     private final JTextField tfLogin = new JTextField(20);
     private final JPasswordField pfPass = new JPasswordField(20);
+    private final JButton btnOk = new JButton("Login");
+    private final JButton btnCancel = new JButton("Cancel");
 
     public LoginDialog() {
-        setTitle("Login");
-        setModal(true);
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        setLayout(new GridBagLayout());
+        super((Frame) null, "Login", true); // birbirine bağlı pencereler
+        initComponents();
+        pack();
+        setResizable(false);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5,5,5,5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Логин
+        // username
         gbc.gridx = 0; gbc.gridy = 0;
         add(new JLabel("Username:"), gbc);
         gbc.gridx = 1; gbc.gridy = 0;
         add(tfLogin, gbc);
 
-        // Пароль
+        // password
         gbc.gridx = 0; gbc.gridy = 1;
         add(new JLabel("Password:"), gbc);
         gbc.gridx = 1; gbc.gridy = 1;
         add(pfPass, gbc);
 
         // Кнопки
-        JButton btnOk = new JButton("Войти");
-        JButton btnCancel = new JButton("Отмена");
-
+        // Buttons
+        JButton btnOk     = new JButton("Login");
+        JButton btnCancel = new JButton("Cancel");
         btnOk.addActionListener(e -> onLogin());
         btnCancel.addActionListener(e -> {
             dispose();
-            System.exit(0);
+            // System.exit(0); // *** REMOVED OLD EXIT-ON-CANCEL ***
+        });
+
+// Sağda hizalı buton paneli için FlowLayout ekledik
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT)); // *** NEW ***
+        btnPanel.add(btnOk);
+        btnPanel.add(btnCancel);
         });
 
         JPanel pnlButtons = new JPanel();
