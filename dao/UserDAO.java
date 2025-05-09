@@ -42,7 +42,7 @@ public class UserDAO {
                 list.add(new User(
                         rs.getInt("id"),
                         rs.getString("username"),
-                        rs.getString("password_hash"),
+                        rs.getString("passwordd"),
                         rs.getString("role")
                 ));
             }
@@ -69,7 +69,7 @@ public class UserDAO {
                     return new User(
                             rs.getInt("id"),
                             rs.getString("username"),
-                            rs.getString("password_hash"),
+                            rs.getString("passwordd"),
                             rs.getString("role")
                     );
                 }
