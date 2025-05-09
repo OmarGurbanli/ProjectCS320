@@ -19,6 +19,8 @@ public class ClassPanel extends JPanel {
     private final DefaultTableModel model;
     private final JTable table;
     private final TableRowSorter<DefaultTableModel> sorter;
+    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
 
     public ClassPanel() {
         super(new BorderLayout());
@@ -62,18 +64,18 @@ public class ClassPanel extends JPanel {
 
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // Кнопки для тренера
-        if ("TRAINER".equals(AppContext.getCurrentUser().getRole())) {
+       //admini spesifik olarak belirtmek gerekiyordu, değiştirdim
+        String role = AppContext.getCurrentUser().getRole();
+        if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
             JPanel btnPanel = new JPanel();
-            JButton btnAdd = new JButton("Add Class");
-            JButton btnDel = new JButton("Delete Class");
-
-            btnAdd.addActionListener(e -> onAdd());
-            btnDel.addActionListener(e -> onDelete());
-
-            btnPanel.add(btnAdd);
-            btnPanel.add(btnDel);
-            add(btnPanel, BorderLayout.SOUTH);
+            if ("ADMIN".equals(role)) {
+                JButton btnAdd = new JButton("Add Class");
+                JButton btnEdit = new JButton("Edit Class");
+                btnAdd.addActionListener(e -> onAdd());
+                btnEdit.addActionListener(e -> onEdit());
+                btnPanel.add(btnAdd);
+                btnPanel.add(btnEdit);
+            }
         }
     }
 
