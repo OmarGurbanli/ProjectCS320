@@ -27,4 +27,8 @@ public class MemberTableModel extends AbstractTableModel {
             default -> null;
         };
     }
+    //rowdan membera doğrudan erişim
+    public Member getMemberAt(int row) {
+        return members.get(row);
+    }
 }
