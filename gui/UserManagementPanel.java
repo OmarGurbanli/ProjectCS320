@@ -12,11 +12,19 @@ import java.util.List;
 
 public class UserManagementPanel extends JPanel {
 
-    private final DefaultTableModel model;
+    private final PaymentTableModel model;
     private final JTable table;
+    private final TableRowSorter<PaymentTableModel> sorter;
+    private final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     public UserManagementPanel() {
         super(new BorderLayout());
+        //search panel
+        JPanel top = new JPanel(new BorderLayout(5,5));
+        JTextField tfSearch = new JTextField();
+        top.add(new JLabel("Search:"), BorderLayout.WEST);
+        top.add(tfSearch, BorderLayout.CENTER);
+        add(top, BorderLayout.NORTH);
 
         // Настраиваем модель таблицы
         model = new DefaultTableModel(new Object[]{"ID","Username","Role","PasswordHash"}, 0) {
