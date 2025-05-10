@@ -23,21 +23,21 @@ public class LoginDialog extends JDialog {
         gbc.insets = new Insets(5,5,5,5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Логин
+        // Login
         gbc.gridx = 0; gbc.gridy = 0;
         add(new JLabel("Username:"), gbc);
         gbc.gridx = 1; gbc.gridy = 0;
         add(tfLogin, gbc);
 
-        // Пароль
+        // Password
         gbc.gridx = 0; gbc.gridy = 1;
         add(new JLabel("Password:"), gbc);
         gbc.gridx = 1; gbc.gridy = 1;
         add(pfPass, gbc);
 
-        // Кнопки
-        JButton btnOk = new JButton("Войти");
-        JButton btnCancel = new JButton("Отмена");
+        // LoginDialog
+        JButton btnOk = new JButton("Join");
+        JButton btnCancel = new JButton("Exit");
 
         btnOk.addActionListener(e -> onLogin());
         btnCancel.addActionListener(e -> {
