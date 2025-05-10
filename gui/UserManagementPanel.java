@@ -11,7 +11,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class UserManagementPanel extends JPanel {
-
+    private final UserTableModel model;
+    private final JTable table;
+    private final TableRowSorter<UserTableModel> sorter;
     private final PaymentTableModel model;
     private final JTable table;
     private final TableRowSorter<PaymentTableModel> sorter;
@@ -20,15 +22,16 @@ public class UserManagementPanel extends JPanel {
     public UserManagementPanel() {
         super(new BorderLayout());
         //search panel
-        JPanel top = new JPanel(new BorderLayout(5,5));
+        JPanel top = new JPanel(new BorderLayout(5, 5));
         JTextField tfSearch = new JTextField();
         top.add(new JLabel("Search:"), BorderLayout.WEST);
         top.add(tfSearch, BorderLayout.CENTER);
         add(top, BorderLayout.NORTH);
 
         // Настраиваем модель таблицы
-        model = new DefaultTableModel(new Object[]{"ID","Username","Role","PasswordHash"}, 0) {
-            @Override public boolean isCellEditable(int row, int col) {
+        model = new DefaultTableModel(new Object[]{"ID", "Username", "Role", "PasswordHash"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
                 return false;  // правка «на месте» не нужна || No need to change
             }
         };
@@ -59,7 +62,7 @@ public class UserManagementPanel extends JPanel {
                 });
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "DB error: "+ex.getMessage(),
+            JOptionPane.showMessageDialog(this, "DB error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -67,7 +70,7 @@ public class UserManagementPanel extends JPanel {
     private void onAdd() {
         JTextField tfLogin = new JTextField();
         JPasswordField pf = new JPasswordField();
-        JComboBox<String> cbRole = new JComboBox<>(new String[]{"MEMBER","TRAINER","ADMIN"});
+        JComboBox<String> cbRole = new JComboBox<>(new String[]{"MEMBER", "TRAINER", "ADMIN"});
         Object[] fld = {
                 "Username:", tfLogin,
                 "Password:", pf,
@@ -78,7 +81,7 @@ public class UserManagementPanel extends JPanel {
 
         String login = tfLogin.getText().trim();
         String pass = new String(pf.getPassword());
-        String role = (String)cbRole.getSelectedItem();
+        String role = (String) cbRole.getSelectedItem();
         if (login.isEmpty() || pass.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Login and password required.");
             return;
@@ -88,7 +91,7 @@ public class UserManagementPanel extends JPanel {
             new UserDAO().create(login, hash, role);
             refreshTable();
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "DB error: "+ex.getMessage(),
+            JOptionPane.showMessageDialog(this, "DB error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -99,17 +102,73 @@ public class UserManagementPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Select a row first.");
             return;
         }
-        int id = (int)model.getValueAt(row, 0);
-        String role = (String)model.getValueAt(row, 2);
+        int id = (int) model.getValueAt(row, 0);
+        String role = (String) model.getValueAt(row, 2);
         int ask = JOptionPane.showConfirmDialog(this,
-                "Delete user ID="+id+" ("+role+")?", "Confirm", JOptionPane.YES_NO_OPTION);
+                "Delete user ID=" + id + " (" + role + ")?", "Confirm", JOptionPane.YES_NO_OPTION);
         if (ask != JOptionPane.YES_OPTION) return;
         try {
             new UserDAO().delete(id, role);
             refreshTable();
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "DB error: "+ex.getMessage(),
+            JOptionPane.showMessageDialog(this, "DB error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    private static class UserTableModel extends AbstractTableModel {
+        private final String[] cols = {"ID", "Username", "Role", "PasswordHash"};
+        private List<User> list = List.of();
+
+        public void setUsers(List<User> users) {
+            this.list = users;
+            fireTableDataChanged();
+        }
+
+        public User getUserAt(int row) {
+            return list.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return list.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return cols[col];
+        }
+
+        @Override
+        public Class<?> getColumnClass(int col) {
+            return switch (col) {
+                case 0 -> Integer.class;
+                case 1, 2, 3 -> String.class;
+                default -> Object.class;
+            };
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int col) {
+            return false;
+        }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            User u = list.get(row);
+            return switch (col) {
+                case 0 -> u.getId();
+                case 1 -> u.getUsername();
+                case 2 -> u.getRole();
+                case 3 -> u.getPasswordHash();
+                default -> null;
+            };
+        }
+    }
 }
+
