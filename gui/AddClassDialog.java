@@ -12,8 +12,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
- * Диалог для добавления нового ClassSession.
- * Yeni class sectionu açmak için
+ * Диалог для добавления нового сеанса.
  */
 public class AddClassDialog extends JDialog {
     private boolean saved = false;
@@ -79,7 +78,7 @@ public class AddClassDialog extends JDialog {
                 dispose();
             } catch (IllegalArgumentException | DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Invalid input format or selection.\n" +
+                        "Invalid input format.\n" +
                                 "- Select an instructor.\n" +
                                 "- Time must be 'YYYY-MM-DD HH:MM:SS'.\n" +
                                 "- Capacity must be integer.",

@@ -36,9 +36,9 @@ public class MainFrame extends JFrame {
                 break;
 
             case "MEMBER":
+                // убираем старую вкладку "Classes"
                 tabs.addTab("Profile", new MemberPanel());
-                tabs.addTab("Classes", new ClassPanel());
-                tabs.addTab("Instructors", new InstructorPanel());
+                // MemberPanel внутри себя уже содержит Status, Available, My Classes и т.д.
                 break;
 
             default:

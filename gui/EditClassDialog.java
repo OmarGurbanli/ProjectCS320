@@ -40,7 +40,7 @@ public class EditClassDialog extends JDialog {
             List<Instructor> instructors = new InstructorDAO().findAll();
             for (Instructor ins : instructors) {
                 cbInstructor.addItem(ins);
-                if (ins.getName().equals(session.getInstructorName())) {
+                if (ins.getId() == session.getInstructorId()) {
                     cbInstructor.setSelectedItem(ins);
                 }
             }
@@ -80,7 +80,6 @@ public class EditClassDialog extends JDialog {
                 Timestamp ts = Timestamp.valueOf(tfTime.getText().trim());
                 int cap = Integer.parseInt(tfCapacity.getText().trim());
 
-                // Сохраняем в БД
                 new ClassDAO().update(
                         session.getId(),
                         ts,

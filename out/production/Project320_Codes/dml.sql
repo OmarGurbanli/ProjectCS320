@@ -90,7 +90,7 @@ FROM Admin;
 
 SELECT *
 FROM Class
-WHERE time BETWEEN '2025-05-12 00:00:00' AND '2025-05-12 23:59:59';
+WHERE time BETWEEN '2024-05-12 00:00:00' AND '2025-05-12 23:59:59';
 
 SELECT *
 FROM Enrollment;
@@ -101,3 +101,11 @@ FROM Payment;
 SELECT *
 FROM  GymStatus;
 
+SELECT c.class_id,
+       c.time,
+       c.instructor_id,              -- добавлено
+       i.name AS instructor_name,
+       c.capacity
+FROM Class c
+         JOIN Instructor i ON c.instructor_id = i.instructor_id
+ORDER BY c.time
