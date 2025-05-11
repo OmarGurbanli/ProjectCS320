@@ -3,12 +3,13 @@ package utils;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordUtil {
-    /** Создаёт новый BCrypt-хеш пароля */
+    /** Создаёт новый BCrypt-хеш пароля // encrypt password by BCrypt Lib */
     public static String hash(String plain) {
         return BCrypt.hashpw(plain, BCrypt.gensalt(12));
     }
 
-    /** Проверяет пароль против хеша. */
+    /** Проверяет пароль против хеша. // checking the hashed to plain */
+
     public static boolean verify(String plain, String hash) {
         if (hash == null) {
             return false;
