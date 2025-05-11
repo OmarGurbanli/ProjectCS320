@@ -13,6 +13,7 @@ import java.util.List;
 
 /**
  * Диалог для добавления нового ClassSession.
+ * Yeni class sectionu açmak için
  */
 public class AddClassDialog extends JDialog {
     private boolean saved = false;
