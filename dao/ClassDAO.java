@@ -33,7 +33,7 @@ public class ClassDAO {
         return list;
     }
 
-    /** Создаёт новый сеанс */
+    /** Создаёт новый сеанс // creating a new session */
     public void create(Timestamp time, int instrId, int capacity) throws SQLException {
         String sql = "INSERT INTO Class(time,instructor_id,capacity) VALUES(?,?,?)";
         try (Connection c = DataSource.getConnection();
@@ -45,7 +45,7 @@ public class ClassDAO {
         }
     }
 
-    /** Обновляет существующий сеанс */
+    /** Обновляет существующий сеанс // updating the session time, ins ...*/
     public void update(int id, Timestamp time, int instrId, int capacity) throws SQLException {
         String sql = "UPDATE Class SET time = ?, instructor_id = ?, capacity = ? WHERE class_id = ?";
         try (Connection c = DataSource.getConnection();
@@ -58,7 +58,7 @@ public class ClassDAO {
         }
     }
 
-    /** Удаляет сеанс по ID */
+    /** Удаляет сеанс по ID / */
     public void delete(int classId) throws SQLException {
         String sql = "DELETE FROM Class WHERE class_id = ?";
         try (Connection c = DataSource.getConnection();
