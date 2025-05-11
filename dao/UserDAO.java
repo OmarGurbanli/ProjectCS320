@@ -51,7 +51,7 @@ public class UserDAO {
                 list.add(new User(
                         rs.getInt("id"),
                         rs.getString("username"),
-                        rs.getString("password_hash"),  // <- здесь правильное имя столбца
+                        rs.getString("password_hash"),  // <- здесь правильное имя столбца PLEASE DON"T TOUCH IT
                         rs.getString("role")
                 ));
             }
@@ -68,7 +68,10 @@ public class UserDAO {
                     return new User(
                             rs.getInt("id"),
                             rs.getString("username"),
-                            rs.getString("password_hash"),  // <- и здесь
+                            rs.getString("password_hash"),  // <- и здесь PLEASE DON'T TOUCH IT
+
+                            // guys you put it like "passwordd" it will not answer to anything.
+
                             rs.getString("role")
                     );
                 }
