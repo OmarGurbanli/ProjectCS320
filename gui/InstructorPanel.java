@@ -2,19 +2,27 @@ package gui;
 
 import dao.InstructorDAO;
 import model.Instructor;
+import utils.AppContext;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+
+// добавляем правильный импорт для RowFilter
+import javax.swing.RowFilter;
 
 public class InstructorPanel extends JPanel {
 
-
-        private final InstructorTableModel model;
-        private final JTable table;
-        private final TableRowSorter<InstructorTableModel> sorter;
+    //search and admin
+    private final InstructorTableModel model;
+    private final JTable table;
+    private final TableRowSorter<InstructorTableModel> sorter;
 
     public InstructorPanel() {
         super(new BorderLayout());
@@ -27,16 +35,10 @@ public class InstructorPanel extends JPanel {
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         String role = AppContext.getCurrentUser().getRole();
-        if ("ADMIN".equals(role)) {
-            JButton btnAdd = new JButton("Add Instructor"); // *** NEW ***
-            JButton btnEdit = new JButton("Edit Instructor"); // *** NEW ***
-            JButton btnDel = new JButton("Delete Instructor"); // *** NEW ***
-            btnAdd.addActionListener(e -> onAdd()); // *** NEW ***
-            btnEdit.addActionListener(e -> onEdit()); // *** NEW ***
-            btnDel.addActionListener(e -> onDelete()); // *** NEW ***
-            btnPanel.add(btnAdd);
-            btnPanel.add(btnEdit);
-            btnPanel.add(btnDel);
+        if ("admin".equals(role)) {
+            JButton addBtn = new JButton("Add Instructor");
+            // TODO: addBtn action listener
+            btnPanel.add(addBtn);
         }
         top.add(btnPanel, BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
@@ -48,53 +50,70 @@ public class InstructorPanel extends JPanel {
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
         add(new JScrollPane(table), BorderLayout.CENTER);
-        DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"ID","Name"}, 0
-        ) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        JTable table = new JTable(model);
+
+        // Поиск по таблице
+        tfSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { filter(); }
+            @Override public void removeUpdate(DocumentEvent e) { filter(); }
+            @Override public void changedUpdate(DocumentEvent e) { filter(); }
+            private void filter() {
+                String text = tfSearch.getText();
+                if (text.trim().isEmpty()) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                }
+            }
+        });
+
+        // Загрузка данных из БД
         try {
             List<Instructor> all = new InstructorDAO().findAll();
-            for (Instructor ins : all) {
-                model.addRow(new Object[]{ins.getId(), ins.getName()});
-            }
+            model.setInstructors(new ArrayList<>(all));
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
-                    "DB error: "+ex.getMessage(),
+                    "DB error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
-        add(new JScrollPane(table), BorderLayout.CENTER);
+    }
+
+    // Вложенная модель таблицы
+    private static class InstructorTableModel extends AbstractTableModel {
+        private final String[] cols = {"ID", "Name"};
+        private List<Instructor> list = new ArrayList<>();
+
+        public void setInstructors(List<Instructor> instructors) {
+            this.list = instructors;
+            fireTableDataChanged();
+        }
+
+        public Instructor getInstructorAt(int row) {
+            return list.get(row);
+        }
+
+        @Override public int getRowCount() {
+            return list.size();
+        }
+
+        @Override public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override public String getColumnName(int col) {
+            return cols[col];
+        }
+
+        @Override public Class<?> getColumnClass(int col) { //her cell in data typeı, daha düzenli olsun diye
+            return col == 0 ? Integer.class : String.class;
+        }
+
+        @Override public boolean isCellEditable(int r, int c) { //datalar değiştirilemez, daha güvenli
+            return false;
+        }
+
+        @Override public Object getValueAt(int row, int col) {
+            Instructor ins = list.get(row);
+            return col == 0 ? ins.getId() : ins.getName();
+        }
     }
 }
-private static class InstructorTableModel extends AbstractTableModel {
-    private final String[] cols = {"ID", "Name"};
-    private List<Instructor> list = List.of();
-
-    public void setInstructors(List<Instructor> instructors) {
-        this.list = instructors;
-        fireTableDataChanged();
-    }
-
-    //daha düzenli görünmesi için instructor table model ekledim
-    public Instructor getInstructorAt(int row) {
-        return list.get(row);
-    }
-
-    @Override public int getRowCount() {
-        return list.size(); }
-    @Override public int getColumnCount() {
-        return cols.length; }
-    @Override public String getColumnName(int col) {
-        return cols[col]; }
-    @Override public Class<?> getColumnClass(int col) { //her cell in data typeı, daha düzenli olsun diye
-        return col == 0 ? Integer.class : String.class; }
-    @Override public boolean isCellEditable(int r, int c) { //datalar değiştirilemez, daha güvenli
-        return false; }
-    @Override public Object getValueAt(int row, int col) {
-        Instructor ins = list.get(row);
-        return col == 0 ? ins.getId() : ins.getName();
-    }
-}
-}
-

@@ -9,26 +9,26 @@ CREATE TABLE Member (
     member_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
-    passwordd CHAR(12) NOT NULL,
+    password_hash CHAR(12) NOT NULL,
     is_premium BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE Instructor (
     instructor_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    passwordd CHAR(12) NOT NULL
+    password_hash CHAR(12) NOT NULL
 );
 
 CREATE TABLE Admin (
     admin_id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    passwordd CHAR(12) NOT NULL
+    password_hash CHAR(12) NOT NULL
 );
 
 
 CREATE TABLE Class (
     class_id INT AUTO_INCREMENT PRIMARY KEY,
-    timee DATETIME NOT NULL,
+    time DATETIME NOT NULL,
     instructor_id INT NOT NULL,
     capacity INT NOT NULL,
     FOREIGN KEY (instructor_id) REFERENCES Instructor(instructor_id)

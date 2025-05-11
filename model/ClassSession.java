@@ -2,11 +2,14 @@ package model;
 
 import java.sql.Timestamp;
 
+/**
+ * Represents a scheduled class session.
+ */
 public class ClassSession {
-    private final int id;
-    private final Timestamp time;
-    private final String instructorName;
-    private final int capacity;
+    private int id;
+    private Timestamp time;
+    private String instructorName;
+    private int capacity;
 
     public ClassSession(int id, Timestamp time, String instructorName, int capacity) {
         this.id = id;
@@ -23,11 +26,23 @@ public class ClassSession {
         return time;
     }
 
+    public void setTime(Timestamp time) {
+        this.time = time;
+    }
+
     public String getInstructorName() {
         return instructorName;
     }
 
+    public void setInstructorName(String instructorName) {
+        this.instructorName = instructorName;
+    }
+
     public int getCapacity() {
         return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 }

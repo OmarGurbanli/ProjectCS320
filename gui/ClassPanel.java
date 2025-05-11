@@ -2,159 +2,147 @@ package gui;
 
 import dao.ClassDAO;
 import model.ClassSession;
-import utils.AppContext;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.RowFilter;
 import java.awt.*;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClassPanel extends JPanel {
-    private final DefaultTableModel model;
-    private final JTable table;
-    private final TableRowSorter<DefaultTableModel> sorter;
-    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    // search field and buttons
+    private final JTextField tfSearch;
+    private final JButton btnAdd, btnEdit, btnDelete;
 
+    // table and model for class sessions
+    private final ClassTableModel model;
+    private final JTable table;
+    private final TableRowSorter<ClassTableModel> sorter;
 
     public ClassPanel() {
         super(new BorderLayout());
 
-        // Верхняя панель с поиском
-        JPanel top = new JPanel(new BorderLayout(5, 5));
-        JLabel lblSearch = new JLabel("Search:");
-        JTextField tfSearch = new JTextField();
-        top.add(lblSearch, BorderLayout.WEST);
+        // top panel: search + action buttons
+        JPanel top = new JPanel(new BorderLayout(5,5));
+        tfSearch = new JTextField();
+        top.add(new JLabel("Search Classes:"), BorderLayout.WEST);
         top.add(tfSearch, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnAdd    = new JButton("Add");
+        btnEdit   = new JButton("Edit");
+        btnDelete = new JButton("Delete");
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnEdit);
+        btnPanel.add(btnDelete);
+        top.add(btnPanel, BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
 
-        // Таблица занятий
-        model = new DefaultTableModel(new Object[]{"ID", "Time", "Instructor", "Capacity"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        table = new JTable(model);
+        // table setup
+        model  = new ClassTableModel();
+        table  = new JTable(model);
         sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
-        refreshTable();
+        add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // Фильтрация по вводу в поле поиска
+        // search filter
         tfSearch.getDocument().addDocumentListener(new DocumentListener() {
-            private void filter() {
-                String text = tfSearch.getText().trim();
-                if (text.isEmpty()) {
-                    sorter.setRowFilter(null);
-                } else {
-                    // (?i) — case-insensitive
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-                }
-            }
-
             @Override public void insertUpdate(DocumentEvent e) { filter(); }
             @Override public void removeUpdate(DocumentEvent e) { filter(); }
             @Override public void changedUpdate(DocumentEvent e) { filter(); }
+            private void filter() {
+                String txt = tfSearch.getText();
+                if (txt.trim().isEmpty()) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + txt));
+                }
+            }
         });
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
-
-       //admini spesifik olarak belirtmek gerekiyordu, değiştirdim
-        String role = AppContext.getCurrentUser().getRole();
-        if ("ADMIN".equals(role) || "TRAINER".equals(role)) {
-            JPanel btnPanel = new JPanel();
-            if ("ADMIN".equals(role)) {
-                JButton btnAdd = new JButton("Add Class");
-                JButton btnEdit = new JButton("Edit Class");
-                btnAdd.addActionListener(e -> onAdd());
-                btnEdit.addActionListener(e -> onEdit());
-                btnPanel.add(btnAdd);
-                btnPanel.add(btnEdit);
-            }
-        }
-    }
-
-    /** Загружает данные из БД в модель таблицы */
-    private void refreshTable() {
-        model.setRowCount(0);
+        // load data
         try {
-            List<ClassSession> classes = new ClassDAO().findAll();
-            for (ClassSession cs : classes) {
-                model.addRow(new Object[]{
-                        cs.getId(),
-                        cs.getTime(),
-                        cs.getInstructorName(),
-                        cs.getCapacity()
-                });
-            }
+            List<ClassSession> list = new ClassDAO().findAll();
+            model.setSessions(new ArrayList<>(list));
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this,
                     "Error loading classes: " + ex.getMessage(),
                     "DB Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        // button listeners
+        btnEdit.addActionListener(e -> onEdit());
+        // TODO: add btnAdd and btnDelete listeners
     }
 
-    /** Обработчик добавления нового класса */
-    private void onAdd() {
-        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-        JTextField tfTime = new JTextField("yyyy-MM-dd HH:mm");
-        JTextField tfCap  = new JTextField();
-        panel.add(new JLabel("Time (yyyy-MM-dd HH:mm):"));
-        panel.add(tfTime);
-        panel.add(new JLabel("Capacity:"));
-        panel.add(tfCap);
-
-        int ok = JOptionPane.showConfirmDialog(this, panel,
-                "Add New Class", JOptionPane.OK_CANCEL_OPTION);
-        if (ok != JOptionPane.OK_OPTION) return;
-
-        try {
-            java.util.Date parsed = new SimpleDateFormat("yyyy-MM-dd HH:mm")
-                    .parse(tfTime.getText().trim());
-            java.sql.Timestamp ts = new java.sql.Timestamp(parsed.getTime());
-            int cap = Integer.parseInt(tfCap.getText().trim());
-            int instrId = AppContext.getCurrentUser().getId();
-
-            new ClassDAO().create(ts, instrId, cap);
-            refreshTable();
-        } catch (ParseException pe) {
-            JOptionPane.showMessageDialog(this,
-                    "Invalid date format", "Input Error", JOptionPane.WARNING_MESSAGE);
-        } catch (NumberFormatException ne) {
-            JOptionPane.showMessageDialog(this,
-                    "Capacity must be a number", "Input Error", JOptionPane.WARNING_MESSAGE);
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "DB Error: " + ex.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /** Обработчик удаления выбранного класса */
-    private void onDelete() {
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Select a class first");
+    private void onEdit() {
+        int viewRow = table.getSelectedRow();
+        if (viewRow < 0) {
+            JOptionPane.showMessageDialog(this, "Please select a row to edit.");
             return;
         }
-        int modelRow = table.convertRowIndexToModel(row);
-        int classId = (int) model.getValueAt(modelRow, 0);
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        ClassSession cs = model.getClassSessionAt(modelRow);
+        // TODO: implement your edit dialog here, e.g.:
+        // EditClassDialog dlg = new EditClassDialog(SwingUtilities.getWindowAncestor(this), cs);
+        // dlg.setVisible(true);
+        // if (dlg.isSaved()) model.fireTableRowsUpdated(modelRow, modelRow);
+    }
 
-        int ok = JOptionPane.showConfirmDialog(this,
-                "Delete class ID=" + classId + "?", "Confirm Delete",
-                JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
+    // nested table model
+    private static class ClassTableModel extends AbstractTableModel {
+        private final String[] cols     = { "ID", "Name", "Instructor", "Time" };
+        private List<ClassSession> sessions = new ArrayList<>();
 
-        try {
-            new ClassDAO().delete(classId);
-            refreshTable();
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "DB Error: " + ex.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
+        public void setSessions(List<ClassSession> list) {
+            this.sessions = list;
+            fireTableDataChanged();
+        }
+
+        public ClassSession getClassSessionAt(int row) {
+            return sessions.get(row);
+        }
+
+        @Override public int getRowCount() {
+            return sessions.size();
+        }
+
+        @Override public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override public String getColumnName(int col) {
+            return cols[col];
+        }
+
+        @Override public Class<?> getColumnClass(int col) {
+            switch (col) {
+                case 0: return Integer.class;
+                case 3: return String.class; // or LocalDateTime.class
+                default: return String.class;
+            }
+        }
+
+        @Override public boolean isCellEditable(int r, int c) {
+            return false;
+        }
+
+        @Override public Object getValueAt(int row, int col) {
+            ClassSession cs = sessions.get(row);
+            switch (col) {
+                case 0: return cs.getId();
+                case 1:
+                    // Placeholder: replace toString() with the actual getter, e.g. cs.getTitle()
+                    return cs.toString();
+                case 2: return cs.getInstructorName();
+                case 3: return cs.getTime().toString();
+                default: return null;
+            }
         }
     }
 }
