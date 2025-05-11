@@ -9,7 +9,9 @@ import java.util.List;
 
 public class UserDAO {
 
-    /** Вернёт список всех пользователей из трёх таблиц */
+    /** Вернёт список всех пользователей из трёх таблиц // gives lists of all users */
+
+
     public List<User> findAll() throws SQLException {
         List<User> out = new ArrayList<>();
         out.addAll(fetchUsers(
@@ -21,7 +23,7 @@ public class UserDAO {
         return out;
     }
 
-    /** Ищем одного пользователя по логину во всех трёх таблицах */
+    /** Ищем одного пользователя по логину во всех трёх таблицах // After Login shows the correct user */
     public User findByLogin(String login) throws SQLException {
         User u = fetchSingleUser(
                 "SELECT member_id AS id, username, password_hash, 'MEMBER' AS role FROM Member WHERE username = ?",
@@ -37,6 +39,7 @@ public class UserDAO {
                 "SELECT admin_id AS id, name AS username, password_hash, 'ADMIN' AS role FROM Admin WHERE name = ?",
                 login);
     }
+
 
     private List<User> fetchUsers(String sql) throws SQLException {
         List<User> list = new ArrayList<>();
@@ -74,7 +77,9 @@ public class UserDAO {
         return null;
     }
 
-    /** Создание нового юзера в соответствующей таблице */
+
+
+    /** Создание нового юзера в соответствующей таблице // Create a new user  */
     public void create(String username, String passwordHash, String role) throws SQLException {
         String sql;
         switch (role) {
