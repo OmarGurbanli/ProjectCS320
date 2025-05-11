@@ -2,7 +2,7 @@
 use gymdb;
 
 
-INSERT INTO Member (name, username, passwordd, is_premium) VALUES
+INSERT INTO Member (name, username, password_hash, is_premium) VALUES
 ('John Smith',       'johnsmith',    'john2025'   , FALSE),
 ('Emma Johnson',     'emmaj'   ,    'emma2025'   , TRUE),
 ('Michael Brown',    'michaelb',     'mikeBrown1' , FALSE),
@@ -14,7 +14,7 @@ INSERT INTO Member (name, username, passwordd, is_premium) VALUES
 ('Benjamin Anderson','benjamina',    'benAnderson', FALSE),
 ('Sophia Thomas',    'sophiat' ,     'sophiaThoma', TRUE);
 
-INSERT INTO Instructor (name, passwordd) VALUES
+INSERT INTO Instructor (name, password_hash) VALUES
 ('Alexander Lee',      'inst2025012'),
 ('Charlotte Martin',   'inst2025023'),
 ('Daniel Rodriguez',   'inst2025034'),
@@ -26,7 +26,7 @@ INSERT INTO Instructor (name, passwordd) VALUES
 ('Joshua Allen',       'inst2025090'),
 ('Emily Young',        'inst2025101');
 
-INSERT INTO Admin (name, passwordd) VALUES
+INSERT INTO Admin (name, password_hash) VALUES
 ('Ryan Baker',      'adm202501234'),
 ('Victoria Perez',  'adm202502345'),
 ('Anthony Gonzalez','adm202503456'),
@@ -38,7 +38,7 @@ INSERT INTO Admin (name, passwordd) VALUES
 ('Brandon Kelly',   'adm202509012'),
 ('Zoe Foster',      'adm202510123');
 
-INSERT INTO Class (timee, instructor_id, capacity) VALUES
+INSERT INTO Class (time, instructor_id, capacity) VALUES
 ('2025-06-01 08:00:00',  1, 20),
 ('2025-06-02 10:30:00',  2, 25),
 ('2025-06-04 14:00:00',  3, 18),
@@ -73,4 +73,31 @@ INSERT INTO GymStatus (member_id, is_active) VALUES
 (8, FALSE),
 (9, TRUE),
 (10, TRUE);
+
+
+SELECT name, username 
+FROM Member
+WHERE is_premium = TRUE;
+
+SELECT 
+  instructor_id,
+  name
+FROM Instructor
+WHERE name LIKE 'A%';
+
+SELECT COUNT(*) AS toplam_admin
+FROM Admin;
+
+SELECT *
+FROM Class
+WHERE time BETWEEN '2025-05-12 00:00:00' AND '2025-05-12 23:59:59';
+
+SELECT *
+FROM Enrollment;
+
+SELECT *
+FROM Payment;
+
+SELECT *
+FROM  GymStatus;
 
