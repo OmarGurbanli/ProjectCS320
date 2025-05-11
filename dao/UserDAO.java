@@ -12,25 +12,30 @@ public class UserDAO {
     /** Вернёт список всех пользователей из трёх таблиц */
     public List<User> findAll() throws SQLException {
         List<User> out = new ArrayList<>();
-        out.addAll(findMembers());
-        out.addAll(findInstructors());
-        out.addAll(findAdmins());
+        out.addAll(fetchUsers(
+                "SELECT member_id AS id, username, password_hash, 'MEMBER' AS role FROM Member"));
+        out.addAll(fetchUsers(
+                "SELECT instructor_id AS id, name AS username, password_hash, 'TRAINER' AS role FROM Instructor"));
+        out.addAll(fetchUsers(
+                "SELECT admin_id AS id, name AS username, password_hash, 'ADMIN' AS role FROM Admin"));
         return out;
     }
 
-    private List<User> findMembers() throws SQLException {
-        String sql = "SELECT member_id AS id, username, password_hash, 'MEMBER' AS role FROM Member";
-        return fetchUsers(sql);
-    }
+    /** Ищем одного пользователя по логину во всех трёх таблицах */
+    public User findByLogin(String login) throws SQLException {
+        User u = fetchSingleUser(
+                "SELECT member_id AS id, username, password_hash, 'MEMBER' AS role FROM Member WHERE username = ?",
+                login);
+        if (u != null) return u;
 
-    private List<User> findInstructors() throws SQLException {
-        String sql = "SELECT instructor_id AS id, name AS username, password_hash, 'TRAINER' AS role FROM Instructor";
-        return fetchUsers(sql);
-    }
+        u = fetchSingleUser(
+                "SELECT instructor_id AS id, name AS username, password_hash, 'TRAINER' AS role FROM Instructor WHERE name = ?",
+                login);
+        if (u != null) return u;
 
-    private List<User> findAdmins() throws SQLException {
-        String sql = "SELECT admin_id AS id, name AS username, password_hash, 'ADMIN' AS role FROM Admin";
-        return fetchUsers(sql);
+        return fetchSingleUser(
+                "SELECT admin_id AS id, name AS username, password_hash, 'ADMIN' AS role FROM Admin WHERE name = ?",
+                login);
     }
 
     private List<User> fetchUsers(String sql) throws SQLException {
@@ -38,11 +43,12 @@ public class UserDAO {
         try (Connection c = DataSource.getConnection();
              Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
+
             while (rs.next()) {
                 list.add(new User(
                         rs.getInt("id"),
                         rs.getString("username"),
-                        rs.getString("passwordd"),
+                        rs.getString("password_hash"),  // <- здесь правильное имя столбца
                         rs.getString("role")
                 ));
             }
@@ -50,64 +56,16 @@ public class UserDAO {
         return list;
     }
 
-    /** Ищем одного пользователя по логину (username/name) во всех трёх таблицах */
-    public User findByLogin(String login) throws SQLException {
-        User u = findMember(login);
-        if (u != null) return u;
-        u = findInstructor(login);
-        if (u != null) return u;
-        return findAdmin(login);
-    }
-
-    private User findMember(String username) throws SQLException {
-        String sql = "SELECT member_id AS id, username, password_hash, 'MEMBER' AS role FROM Member WHERE username = ?";
+    private User fetchSingleUser(String sql, String param) throws SQLException {
         try (Connection c = DataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, username);
+            ps.setString(1, param);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return new User(
                             rs.getInt("id"),
                             rs.getString("username"),
-                            rs.getString("passwordd"),
-                            rs.getString("role")
-                    );
-                }
-            }
-        }
-        return null;
-    }
-
-    private User findInstructor(String name) throws SQLException {
-        String sql = "SELECT instructor_id AS id, name AS username, password_hash, 'TRAINER' AS role FROM Instructor WHERE name = ?";
-        try (Connection c = DataSource.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new User(
-                            rs.getInt("id"),
-                            rs.getString("username"),
-                            rs.getString("password_hash"),
-                            rs.getString("role")
-                    );
-                }
-            }
-        }
-        return null;
-    }
-
-    private User findAdmin(String name) throws SQLException {
-        String sql = "SELECT admin_id AS id, name AS username, password_hash, 'ADMIN' AS role FROM Admin WHERE name = ?";
-        try (Connection c = DataSource.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new User(
-                            rs.getInt("id"),
-                            rs.getString("username"),
-                            rs.getString("password_hash"),
+                            rs.getString("password_hash"),  // <- и здесь
                             rs.getString("role")
                     );
                 }
@@ -121,16 +79,8 @@ public class UserDAO {
         String sql;
         switch (role) {
             case "MEMBER":
-                // раньше было только username, теперь вставляем name и username
                 sql = "INSERT INTO Member(name, username, password_hash) VALUES(?,?,?)";
-                try (Connection c = DataSource.getConnection();
-                     PreparedStatement ps = c.prepareStatement(sql)) {
-                    ps.setString(1, username);       // name = username
-                    ps.setString(2, username);       // username
-                    ps.setString(3, passwordHash);
-                    ps.executeUpdate();
-                }
-                return;
+                break;
             case "TRAINER":
                 sql = "INSERT INTO Instructor(name, password_hash) VALUES(?,?)";
                 break;
@@ -148,7 +98,6 @@ public class UserDAO {
         }
     }
 
-
     /** Удаление по ID и роли */
     public void delete(int id, String role) throws SQLException {
         try (Connection c = DataSource.getConnection()) {
@@ -156,48 +105,17 @@ public class UserDAO {
             try {
                 switch (role) {
                     case "MEMBER":
-                        // 1) Удаляем все записи об участии в классах
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM Enrollment WHERE member_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
-                        // 2) Удаляем все записи об оплатах
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM Payment WHERE member_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
-                        // 3) Удаляем статус в GymStatus (если есть)
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM GymStatus WHERE member_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
-                        // 4) Наконец, сам Member
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM Member WHERE member_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
+                        executeUpdate(c, "DELETE FROM Enrollment WHERE member_id = ?", id);
+                        executeUpdate(c, "DELETE FROM Payment WHERE member_id = ?", id);
+                        executeUpdate(c, "DELETE FROM GymStatus WHERE member_id = ?", id);
+                        executeUpdate(c, "DELETE FROM Member WHERE member_id = ?", id);
                         break;
-
                     case "TRAINER":
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM Instructor WHERE instructor_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
+                        executeUpdate(c, "DELETE FROM Instructor WHERE instructor_id = ?", id);
                         break;
-
                     case "ADMIN":
-                        try (PreparedStatement ps = c.prepareStatement(
-                                "DELETE FROM Admin WHERE admin_id = ?")) {
-                            ps.setInt(1, id);
-                            ps.executeUpdate();
-                        }
+                        executeUpdate(c, "DELETE FROM Admin WHERE admin_id = ?", id);
                         break;
-
                     default:
                         throw new IllegalArgumentException("Unknown role: " + role);
                 }
@@ -211,4 +129,10 @@ public class UserDAO {
         }
     }
 
+    private void executeUpdate(Connection c, String sql, int param) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, param);
+            ps.executeUpdate();
+        }
+    }
 }
