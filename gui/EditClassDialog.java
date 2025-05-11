@@ -1,13 +1,16 @@
 package gui;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-
+import dao.ClassDAO;
+import dao.InstructorDAO;
 import model.ClassSession;
+import model.Instructor;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
  * Диалог для редактирования ClassSession.
@@ -16,8 +19,9 @@ public class EditClassDialog extends JDialog {
     private final ClassSession session;
     private boolean saved = false;
 
-    private final JTextField tfInstructor;
+    private final JComboBox<Instructor> cbInstructor;
     private final JTextField tfTime;
+    private final JTextField tfCapacity;
 
     public EditClassDialog(Window owner, ClassSession session) {
         super(owner, "Edit Class", ModalityType.APPLICATION_MODAL);
@@ -28,19 +32,39 @@ public class EditClassDialog extends JDialog {
         gbc.insets = new Insets(5,5,5,5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Instructor
+        // Instructor selection
         gbc.gridx = 0; gbc.gridy = 0;
         panel.add(new JLabel("Instructor:"), gbc);
-        tfInstructor = new JTextField(session.getInstructorName(), 20);
+        cbInstructor = new JComboBox<>();
+        try {
+            List<Instructor> instructors = new InstructorDAO().findAll();
+            for (Instructor ins : instructors) {
+                cbInstructor.addItem(ins);
+                if (ins.getName().equals(session.getInstructorName())) {
+                    cbInstructor.setSelectedItem(ins);
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error loading instructors: " + ex.getMessage(),
+                    "DB Error", JOptionPane.ERROR_MESSAGE);
+        }
         gbc.gridx = 1;
-        panel.add(tfInstructor, gbc);
+        panel.add(cbInstructor, gbc);
 
-        // Time (ISO_LOCAL_DATE_TIME format)
+        // Time
         gbc.gridx = 0; gbc.gridy = 1;
-        panel.add(new JLabel("Time:"), gbc);
+        panel.add(new JLabel("Time (YYYY-MM-DD HH:MM:SS):"), gbc);
         tfTime = new JTextField(session.getTime().toString(), 20);
         gbc.gridx = 1;
         panel.add(tfTime, gbc);
+
+        // Capacity
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(new JLabel("Capacity:"), gbc);
+        tfCapacity = new JTextField(String.valueOf(session.getCapacity()), 20);
+        gbc.gridx = 1;
+        panel.add(tfCapacity, gbc);
 
         // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -49,30 +73,38 @@ public class EditClassDialog extends JDialog {
         btnPanel.add(btnSave);
         btnPanel.add(btnCancel);
 
-        // Actions
-        btnSave.addActionListener(new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    session.setInstructorName(tfInstructor.getText().trim());
-                    // Парсим строку в LocalDateTime
-                    LocalDateTime ldt = LocalDateTime.parse(tfTime.getText().trim());
-                    // Преобразуем в java.sql.Timestamp и устанавливаем
-                    session.setTime(Timestamp.valueOf(ldt));
-                    saved = true;
-                    dispose();
-                } catch (DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(EditClassDialog.this,
-                            "Invalid time format. Use YYYY-MM-DDTHH:MM:SS",
-                            "Format Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
+        btnSave.addActionListener(e -> {
+            try {
+                Instructor sel = (Instructor) cbInstructor.getSelectedItem();
+                if (sel == null) throw new IllegalArgumentException("No instructor selected");
+                Timestamp ts = Timestamp.valueOf(tfTime.getText().trim());
+                int cap = Integer.parseInt(tfCapacity.getText().trim());
 
+                // Сохраняем в БД
+                new ClassDAO().update(
+                        session.getId(),
+                        ts,
+                        sel.getId(),
+                        cap
+                );
+                saved = true;
+                dispose();
+            } catch (IllegalArgumentException | DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid input format.\n" +
+                                "- Select an instructor.\n" +
+                                "- Time must be 'YYYY-MM-DD HH:MM:SS'.\n" +
+                                "- Capacity must be integer.",
+                        "Format Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "DB error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         btnCancel.addActionListener(e -> dispose());
 
-        // Layout
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(panel, BorderLayout.CENTER);
         getContentPane().add(btnPanel, BorderLayout.SOUTH);
@@ -80,9 +112,7 @@ public class EditClassDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    /**
-     * @return true if user clicked Save and data was updated
-     */
+    /** @return true if user clicked Save and changes were saved */
     public boolean isSaved() {
         return saved;
     }

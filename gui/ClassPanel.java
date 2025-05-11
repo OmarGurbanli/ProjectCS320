@@ -15,11 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClassPanel extends JPanel {
-    // search field and buttons
     private final JTextField tfSearch;
     private final JButton btnAdd, btnEdit, btnDelete;
-
-    // table and model for class sessions
     private final ClassTableModel model;
     private final JTable table;
     private final TableRowSorter<ClassTableModel> sorter;
@@ -57,15 +54,68 @@ public class ClassPanel extends JPanel {
             @Override public void changedUpdate(DocumentEvent e) { filter(); }
             private void filter() {
                 String txt = tfSearch.getText();
-                if (txt.trim().isEmpty()) {
-                    sorter.setRowFilter(null);
-                } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + txt));
-                }
+                sorter.setRowFilter(txt.trim().isEmpty()
+                        ? null
+                        : RowFilter.regexFilter("(?i)" + txt));
             }
         });
 
         // load data
+        loadData();
+
+        // Add
+        btnAdd.addActionListener(e -> {
+            AddClassDialog dlg = new AddClassDialog(
+                    SwingUtilities.getWindowAncestor(this)
+            );
+            dlg.setVisible(true);
+            if (dlg.isSaved()) loadData();
+        });
+
+        // Edit
+        btnEdit.addActionListener(e -> {
+            int vr = table.getSelectedRow();
+            if (vr < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a row to edit.");
+                return;
+            }
+            int mr = table.convertRowIndexToModel(vr);
+            ClassSession cs = model.getClassSessionAt(mr);
+            EditClassDialog dlg = new EditClassDialog(
+                    SwingUtilities.getWindowAncestor(this), cs
+            );
+            dlg.setVisible(true);
+            if (dlg.isSaved()) loadData();
+        });
+
+        // Delete
+        btnDelete.addActionListener(e -> {
+            int vr = table.getSelectedRow();
+            if (vr < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a row to delete.");
+                return;
+            }
+            int mr = table.convertRowIndexToModel(vr);
+            ClassSession cs = model.getClassSessionAt(mr);
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to delete class ID " + cs.getId() + "?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION
+            );
+            if (confirm != JOptionPane.YES_OPTION) return;
+            try {
+                new ClassDAO().delete(cs.getId());
+                loadData();
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Error deleting class: " + ex.getMessage(),
+                        "DB Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+
+    private void loadData() {
         try {
             List<ClassSession> list = new ClassDAO().findAll();
             model.setSessions(new ArrayList<>(list));
@@ -74,29 +124,11 @@ public class ClassPanel extends JPanel {
                     "Error loading classes: " + ex.getMessage(),
                     "DB Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        // button listeners
-        btnEdit.addActionListener(e -> onEdit());
-        // TODO: add btnAdd and btnDelete listeners
-    }
-
-    private void onEdit() {
-        int viewRow = table.getSelectedRow();
-        if (viewRow < 0) {
-            JOptionPane.showMessageDialog(this, "Please select a row to edit.");
-            return;
-        }
-        int modelRow = table.convertRowIndexToModel(viewRow);
-        ClassSession cs = model.getClassSessionAt(modelRow);
-        // TODO: implement your edit dialog here, e.g.:
-        // EditClassDialog dlg = new EditClassDialog(SwingUtilities.getWindowAncestor(this), cs);
-        // dlg.setVisible(true);
-        // if (dlg.isSaved()) model.fireTableRowsUpdated(modelRow, modelRow);
     }
 
     // nested table model
     private static class ClassTableModel extends AbstractTableModel {
-        private final String[] cols     = { "ID", "Name", "Instructor", "Time" };
+        private final String[] cols = { "ID", "Instructor", "Time", "Capacity" };
         private List<ClassSession> sessions = new ArrayList<>();
 
         public void setSessions(List<ClassSession> list) {
@@ -108,41 +140,22 @@ public class ClassPanel extends JPanel {
             return sessions.get(row);
         }
 
-        @Override public int getRowCount() {
-            return sessions.size();
-        }
-
-        @Override public int getColumnCount() {
-            return cols.length;
-        }
-
-        @Override public String getColumnName(int col) {
-            return cols[col];
-        }
-
+        @Override public int getRowCount() { return sessions.size(); }
+        @Override public int getColumnCount() { return cols.length; }
+        @Override public String getColumnName(int col) { return cols[col]; }
         @Override public Class<?> getColumnClass(int col) {
-            switch (col) {
-                case 0: return Integer.class;
-                case 3: return String.class; // or LocalDateTime.class
-                default: return String.class;
-            }
+            return col == 0 ? Integer.class : String.class;
         }
-
-        @Override public boolean isCellEditable(int r, int c) {
-            return false;
-        }
-
+        @Override public boolean isCellEditable(int r, int c) { return false; }
         @Override public Object getValueAt(int row, int col) {
             ClassSession cs = sessions.get(row);
-            switch (col) {
-                case 0: return cs.getId();
-                case 1:
-                    // Placeholder: replace toString() with the actual getter, e.g. cs.getTitle()
-                    return cs.toString();
-                case 2: return cs.getInstructorName();
-                case 3: return cs.getTime().toString();
-                default: return null;
-            }
+            return switch (col) {
+                case 0 -> cs.getId();
+                case 1 -> cs.getInstructorName();
+                case 2 -> cs.getTime().toString();
+                case 3 -> cs.getCapacity();
+                default -> null;
+            };
         }
     }
 }
